@@ -1,20 +1,20 @@
 import time
 import board
-import adafruit_dht
 import RPi.GPIO as GPIO
 import pigpio
 
-dht_device = adafruit_dht.DHT11(board.D4)
 servo = 12
 pwm = pigpio.pi()
 pwm.set_mode(servo, pigpio.OUTPUT)
 pwm.set_PWM_frequency(servo, 50)
 
+temps = [70, 71, 72, 73, 74, 75]
+temps_index = 0
+
 while True:
     try:
-        temp_c = dht_device.temperature
-        temp_f = temp_c * (9 / 5) + 32
-        humidity = dht_device.humidity
+        temp_f = temps[temps_index]
+        humidity = 50.0
         print(f'Temp: {temp_f:.2f} Humidity: {humidity:.2f}')
         if temp_f > 75:
             temp_f = 75
@@ -31,18 +31,15 @@ while True:
         servo_pwm = (2000 - (angle * 2000) / 180) + 500
         if servo_pwm > 2500:
             servo_pwm = 2500
-        if servo_pwm < 600: # should be 500, but 600 seems to work better
+        if servo_pwm < 600: # should be 500
             servo_pwm = 600
         print(f'PWM: {servo_pwm:.2f}')
         pwm.set_servo_pulsewidth(servo, servo_pwm)
-    except RuntimeError as error:
-        print(error.args[0])
-        time.sleep(2.0)
-        continue
-    except Exception as error:
-        dht_device.exit()
-        raise error
     except KeyboardInterrupt:
         pwm.set_PWM_dutycycle( servo, 0 )
         pwm.set_PWM_frequency( servo, 0 )
+
+    temps_index += 1
+    if temps_index > 5:
+        temps_index = 0
     time.sleep(2.0)
